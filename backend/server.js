@@ -19,23 +19,19 @@ restaurantApp.use(bodyParser.json());
 restaurantApp.use(bodyParser.urlencoded({ extended: true }));
 
 // restaurantApp.use(verifyToken);
-MongoClient.connect(db_uri, {useNewUrlParser: true, useUnifiedTopology: true}, (err, client) => {
+MongoClient.connect(db_uri, {useNewUrlParser: true, useUnifiedTopology: true}, async (err, client) => {
     if (err) {
         console.log(`Cannot connect to Database. Error: ${err}`);
         // process.exit(-1);
     }
 
-    const restaurantDB = client.db('restaurant-data');
-    const restaurantsCollection =restaurantDB.collection('restaurants');
-    const queryCollection = restaurantDB.collection('queries');
-    const usersCollection = restaurantDB.collection('users');
+    const restaurantDB = await client.db('restaurant-data');
+    const restaurantsCollection = await restaurantDB.collection('restaurants');
+    const queryCollection = await restaurantDB.collection('queries');
+    const usersCollection = await restaurantDB.collection('users');
     
     console.log('connected to DB collection');
 
-    //Welcome
-    restaurantApp.post('/welcome', verifyToken, (req, res) => {
-        res.status(200).json({message:'Welcome User'});
-    })
 
     //login user
     restaurantApp.post('/login', async (req, res) => {
@@ -176,10 +172,10 @@ MongoClient.connect(db_uri, {useNewUrlParser: true, useUnifiedTopology: true}, (
 //         }
 //     });
 
-    restaurantApp.listen(port, ()=>{
-        console.log(`Restaurant Server listening on ${port}`);
-    });
+   
 })
-
+restaurantApp.listen(port, ()=>{
+    console.log(`Restaurant Server listening on ${port}`);
+});
 
 export default restaurantApp;

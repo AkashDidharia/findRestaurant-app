@@ -1,16 +1,19 @@
-import assert from 'assert';
-import expect from 'expect';
-import request from 'supertest';
+import chai from 'chai';
+import chaiHttp from 'chai-http';
 import restaurantApp from '../server.js';
 
+chai.should();
+chai.use(chaiHttp);
 
-describe('testing the /getListOfPlaces route', () => {
-    it('should return status 200', () => {
-        return request(restaurantApp)
+describe('Test GET route /getListOfPlaces', () => {
+
+    it('should return status 200', (done) => {
+        chai.request(restaurantApp)
             .get('/getListOfPlaces')
-            .then(response => {
-                assert.equal(response.status, 200)
+            .end((err, response) => {
+                response.should.have.status(200);
+            done();
             })
-            .catch(err => {console.error(err)});
     });
+
 });
