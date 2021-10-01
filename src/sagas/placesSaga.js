@@ -19,7 +19,7 @@ function fetchPlaces(){
 function* placesWorkerSaga(){
     try{
         const response = yield(call(fetchPlaces));
-        const places = response.data;
+        const places = response.data.topTwenty;
 
         //dispatch an event that says we got a success response
 

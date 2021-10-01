@@ -6,16 +6,18 @@ import dotenv from "dotenv";
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
 import verifyToken from './middleware/auth.js';
-
+import validator from 'validator';
 
 dotenv.config();
 
 const restaurantApp = express();
 const port = process.env.PORT || 5000;
 const db_uri = process.env.DB_STRING;
+
 restaurantApp.use(cors());
 restaurantApp.use(bodyParser.json());
-restaurantApp.use(bodyParser.urlencoded({ extended: false }));
+restaurantApp.use(bodyParser.urlencoded({ extended: true }));
+
 // restaurantApp.use(verifyToken);
 MongoClient.connect(db_uri, {useNewUrlParser: true, useUnifiedTopology: true}, (err, client) => {
     if (err) {
@@ -30,6 +32,11 @@ MongoClient.connect(db_uri, {useNewUrlParser: true, useUnifiedTopology: true}, (
     
     console.log('connected to DB collection');
 
+    //Welcome
+    restaurantApp.post('/welcome', verifyToken, (req, res) => {
+        res.status(200).json({message:'Welcome User'});
+    })
+
     //login user
     restaurantApp.post('/login', async (req, res) => {
         try{
@@ -37,23 +44,28 @@ MongoClient.connect(db_uri, {useNewUrlParser: true, useUnifiedTopology: true}, (
 
             // Validate user input
             if (! (email && password)) {
-                return res.status(409).json({message: "All Fields are mandatory."});
+                return res.status(400).json({message:"All Fields are mandatory"});
             } 
+            if(!validator.isEmail(email)){
+                return res.status(400).json({ message:"Please enter a valid email address"});
+            }
+    
             // Validate if user exist in our database
             const user = await usersCollection.findOne({ email });
         
             if(user && (await bcrypt.compare(password, user.password))){
                
                 const token =jwt.sign(
-                    {userId: user._id, email},
+                    {userId: user.id, email, firstName: user.firstName},
                     process.env.ACCESS_TOKEN_KEY,
                     {
-                        expiresIn: "2h"
+                        expiresIn: "8h"
                     }
-                )
+                );
+
                 return res.status(200).json({token});
             } 
-            res.status(400).json({message:"Invalid username or password"});
+            res.status(401).json({message:"Invalid username or password"});
 
         } catch(err){
             console.log(err);
@@ -69,10 +81,15 @@ MongoClient.connect(db_uri, {useNewUrlParser: true, useUnifiedTopology: true}, (
       
           // Validate user input
           if (!(email && password && firstName && lastName)) {
-            return res.send("All inputs are required");
+            return res.status(400).json({ message:"All inputs are required"});
           }
+
+          if(!validator.isEmail(email)){
+            return res.status(400).json({ message:"Please enter a valid email address"});
+          }
+
           if(password.length < 6) {
-            return res.send("Minimum password length must be 6");
+            return res.status(400).json({ message:"Password must be of atleast 6 characters"});
           }
       
           // check if user already exist
@@ -80,7 +97,7 @@ MongoClient.connect(db_uri, {useNewUrlParser: true, useUnifiedTopology: true}, (
           const oldUser = await usersCollection.findOne({ email });
       
           if (!!oldUser) {
-            return res.send("An account already exists with this email. Please try to Login.");
+            return res.status(409).json({ message:"Email already registered. Please Login."});
           }
       
           //Encrypt user password
@@ -94,7 +111,15 @@ MongoClient.connect(db_uri, {useNewUrlParser: true, useUnifiedTopology: true}, (
             password: encryptedPassword,
           });
           
-          res.send("Accout Created Successfully. Click Login to log in.");
+          const token =jwt.sign(
+            {userId: result.insertedId, email},
+            process.env.ACCESS_TOKEN_KEY,
+            {
+                expiresIn: "8h"
+            }
+        );
+        
+        return res.status(200).json({token});
       
         } catch (err) {
           console.log(err);
@@ -109,21 +134,25 @@ MongoClient.connect(db_uri, {useNewUrlParser: true, useUnifiedTopology: true}, (
             const sort = { rating: -1 };
             const topTwenty = await restaurantsCollection.find({}).sort(sort).limit(20).toArray();
 
-            res.json(topTwenty);
+            res.status(200).json({topTwenty});
+            
         } catch (err) {
             console.log(err);
         }
     })
 
             
-//add id to route and request params
+    //post the user query 
     restaurantApp.post('/postQuery', verifyToken, async (req,res)=>{
         try{
         const {restaurantId, userName, phoneNumber, userQuery, } = req.body;
         //--------------Validate User Query-----------
+        if(!(userName && userQuery)){
+            return res.status(400).json({message: "All fields are required"})
+        }
         if(phoneNumber.length !== 10)
         {
-            return res.send('Phone number must be of length 10')
+            return res.status(400).json({message: 'Phone number must be of 10 digits'})
         }
 
         //req.user is from the verifyToken 
@@ -131,26 +160,26 @@ MongoClient.connect(db_uri, {useNewUrlParser: true, useUnifiedTopology: true}, (
 
         const result = await queryCollection.insertOne(query);
     
-            res.send(`Thanks ${userName}! Your Query is uploaded Successfully!`);
+            res.status(200).json({message: `Thanks ${userName}! Your Query is uploaded Successfully!`});
         } catch(error){
              console.error(error)};
     });
 
     // ------To Insert Restaurant Data----------------
-    restaurantApp.post('/postData', async (req,res)=>{
-        try{
-            const result = await restaurantsCollection.insertMany(req.body);
+//     restaurantApp.post('/postData', async (req,res)=>{
+//         try{
+//             const result = await restaurantsCollection.insertMany(req.body);
 
-            res.json(result);
-        } catch(error){
-            console.error(error)
-        }
+//             res.json(result);
+//         } catch(error){
+//             console.error(error)
+//         }
+//     });
+
+    restaurantApp.listen(port, ()=>{
+        console.log(`Restaurant Server listening on ${port}`);
     });
-
-
-    
 })
 
-restaurantApp.listen(port, ()=>{
-    console.log(`Restaurant Server listening on ${port}`);
-});
+
+export default restaurantApp;

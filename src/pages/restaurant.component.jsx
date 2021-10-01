@@ -14,7 +14,7 @@ const Restaurant = (props)=> {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-   
+   setMessage('')
     let queryPayload ={
       "restaurantId": resId,
       "userName": userName,
@@ -24,17 +24,15 @@ const Restaurant = (props)=> {
     }
 
     try{
-      
-      const res = await axios.post('http://localhost:8000/postQuery', queryPayload);
+      await axios.post('http://localhost:8000/postQuery', queryPayload);
          
       setUserName('');
       setPhoneNumber('');
       setUserQuery('');
 
-      setMessage(res.data);
+      setMessage('Query Successfully Posted');
     } catch (err) {
-      console.error(err);
-      return 'Query not posted! Sorry, please try again'
+      setMessage(err.response.data.message);
     }
 
   }
@@ -46,25 +44,28 @@ const Restaurant = (props)=> {
 
         <h5 className="text-danger mt-5 text-center">Have a Question for us?</h5>
 
-        <form className="form" onSubmit={handleSubmit}>
-          <div className="form-group my-2">
-            <label  >Your Name :</label>
-            <input id="userName" name="userName" type="text" className="form-control" value={userName} required onChange={ e => setUserName(e.target.value)}/>
+        <form className="form col-sm-8 m-auto border rounded p-4" onSubmit={handleSubmit}>
+          <div className="row">
+          
+            <div className="form-group col-md-6 my-2">
+              <label  >Your Name :</label>
+              <input id="userName" name="userName" type="text" className="form-control" value={userName} required onChange={ e => setUserName(e.target.value)}/>
+            </div>
+            <div className="form-group col-md-6 my-2">
+              <label >Contact Number :</label>
+              <input id="phoneNumber" name="phoneNumber" type="number" className=" form-control" minLength="10" maxLength="10" value={phoneNumber} required onChange={ e => setPhoneNumber(e.target.value)}/>
+            </div>
+
           </div>
-          <div className="form-group my-2">
-            <label >Contact Number :</label>
-            <input id="phoneNumber" name="phoneNumber" type="number" className=" form-control" minLength="10" maxLength="10" value={phoneNumber} required onChange={ e => setPhoneNumber(e.target.value)}/>
-          </div>
-          <div className="form-group my-2">
+          <div className="form-group col-12 my-2">
             <label >Your Query:</label>
-            <textarea id="userQuery" name="userQuery" type="text" className="col-sm-8 form-control" row="5" col="20" value={userQuery} onChange={ e => setUserQuery(e.target.value)}/>
+            <textarea id="userQuery" name="userQuery" type="text" className="col-sm-8 form-control" rows="5" col="20" value={userQuery} onChange={ e => setUserQuery(e.target.value)}/>
           </div>
-          <div className="form-group my-2">
+          <div className="form-group text-center col text-danger text-sm">{message}</div>
+          <div className="form-group col mt-3 text-center">
             <button type="submit" className="btn btn-primary">Submit</button>
           </div>
         </form>
-
-        { message ? (<p className="text-danger mt-3">{message}</p>) : (null)}
 
       </div>
     );

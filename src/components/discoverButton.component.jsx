@@ -5,9 +5,7 @@ import { connect } from 'react-redux';
 const DiscoverButton =({ onRequestPlaces })=>{
 
     return(
-        
-        <Link to="/discovery"  onClick={()=>{onRequestPlaces()}} className="nav-link mx-md-5">Discover food joints</Link>
-        
+        <Link to="/discovery"  onClick={()=>{onRequestPlaces()}} className="btn btn-info col-sm mx-md-5 mx-2">Discover food joints</Link>
         )
     }
     

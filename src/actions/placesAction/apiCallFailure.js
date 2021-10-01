@@ -1,0 +1,2 @@
+const API_CALL_FAILURE = "API_CALL_FAILURE";
+export default API_CALL_FAILURE;
